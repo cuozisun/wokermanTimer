@@ -14,9 +14,9 @@
 public function timedTaskTestPost()
 {
     $array['start_time'] = '2019-08-23 11:11:00';//必须
-    $array['url']           = '/api/Order/timedTaskTestResult';//必须
-    $array['url']           = 'www.baidu.com';//必须
-    $array['id']           = '333';//必须用于后续修改定时任务,如果定时任务中已存在相同id,则删除原来任务,创建新任务
+    $array['url']           = '/api/Order/timedTaskTestResult';//必须,路径
+    $array['host']           = 'www.baidu.com';//必须,网址
+    $array['id']           = '333';//必须,用于后续修改定时任务,如果定时任务中已存在相同id,则删除原来任务,创建新任务
     $array['data']          = '1';//随意
     $array['delete']          = '1';//取消任务时传值,创建是传该值则丢掉该信息
     //调用soket给我的程序发送参数
