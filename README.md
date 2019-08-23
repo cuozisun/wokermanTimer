@@ -8,7 +8,7 @@
 
 
 使用方法:
-![Image text](https://raw.githubusercontent.com/cuozisun/img-folder/master/1566529238(1).jpg)
+![Image text](https://raw.githubusercontent.com/cuozisun/img-folder/master/1566529238.jpg)
 ```php
 
 public function timedTaskTestPost()
