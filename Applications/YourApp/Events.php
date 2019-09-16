@@ -40,7 +40,7 @@ class Events
     public static function onConnect($client_id)
     {
         // $is_online = Gateway::isOnline($client_id);
-        echo $client_id;
+        // echo $client_id;
         // echo 1;
     }
 
@@ -56,8 +56,8 @@ class Events
         global $Redis;
         $Redis = new \Redis();
         $Redis->connect('127.0.0.1', 6379);
-        $Redis->auth('Baoma88.');
-        $Redis->select(0); //选择数据库1
+        $Redis->auth('yourpassword');
+        $Redis->select(1); //选择数据库2
         $time = $Redis->get('time');
         //防止每个生命生命周期都被触发
         if (!$time || ($time && $time == 1)) {
@@ -66,6 +66,7 @@ class Events
             }
             $time = $time + 1;
             $Redis->set('time', $time);
+            // $Redis->flushdb();
             $result = $Redis->keys('*'); //取出所有的键名
             foreach ($result as $key => $value) {
                 if ($value != 'time') {
@@ -97,11 +98,11 @@ class Events
         }
         // 给connection对象临时添加一个timer_id属性保存定时器id
         $timer_id = Timer::add($time_interval, function () use ($array,$Redis) {
-
-            self::http_post($array['host'],$array['url'], $array);
+            self::http_post($array);
             $Redis->del($array['id']);
+            // echo '删除任务id'.$array['id'];
         }, [], false);
-        // echo '任务创建成功\n';
+        // echo '创建任务号'.$timer_id."\r\n";
         return $timer_id;
 
     }
@@ -114,15 +115,16 @@ class Events
     {
         global $Redis;
         $array = json_decode($message, true);
-        if ($array) {
+        if ($array && isset($array['id']) && $array['id']) {
             $key   = $array['id'];
             $value = $Redis->get($key);
             if ($value) {
                 //如果有则删掉原来的定时任务和redis,重新添加任务
                 $timer_id = explode('--', $value)[0];
-                Timer::del($value);
+                $bool = Timer::del($timer_id);
                 $Redis->del($key);
-                // echo '任务取消成功\n';
+                // echo '删除任务id'.$key."\r\n";
+                // echo '取消任务号'.$timer_id."\r\n";
             }
             if(isset($array['delete'])){
                 return false;
@@ -130,6 +132,7 @@ class Events
             $timer_id = self::addTimer($array);
             if($timer_id){
                 $str      = $timer_id . '--' . $message;
+                // echo '返回任务号'.$str."\r\n";
                 $Redis->set($key, $str);
             }
         }
@@ -151,7 +154,7 @@ class Events
     public static function http_post($param = [])
     {
         if(count($param) == 0){
-            return false
+            return false;
         }  
         $query = isset($param) ? http_build_query($param) : '';
         // $task_connection->connect();
@@ -159,9 +162,10 @@ class Events
         // 当连接建立成功时，发送http请求数据
         $connection_to_baidu->onConnect = function ($connection_to_baidu) use ($param, $query) {
             // echo '连接成功';
-            $connection_to_baidu->send("POST " . $param['url'] . " HTTP/1.1\r\nHost: edu.llhlec.cn\r\n" . "content-length:" . strlen($query) . "\r\ncontent-type:application/x-www-form-urlencoded\r\nConnection: keep-alive\r\n\r\n" . $query);
+            $connection_to_baidu->send("POST " . $param['url'] . " HTTP/1.1\r\nHost: ".$param['host']."\r\n" . "content-length:" . strlen($query) . "\r\ncontent-type:application/x-www-form-urlencoded\r\nConnection: keep-alive\r\n\r\n" . $query);
         };
         $connection_to_baidu->onMessage = function ($connection_to_baidu, $http_buffer) {
+            // echo "请求发送结束\r\n";
             if (empty($http_buffer)) {return false;}
             $hunks = explode("\r\n\r\n", trim($http_buffer));
             if (!is_array($hunks) or count($hunks) < 2) {
@@ -176,8 +180,9 @@ class Events
                 return trim(unchunkHttpResponse($body));
             } else {
                 $result = preg_split('/[;\r\n]+/s', $body);
-                // $result = $result[1];
-                // echo $result;
+                $result = $result[1];
+                // file_put_contents("aaa.txt", '结果'.var_export($result,true)."\r\n"."\r\n接口被调用\r\n时间为".date('Y-m-d H:i:s',time())."\r\n", FILE_APPEND);
+                echo $result;
             }
         };
         $connection_to_baidu->onClose = function ($connection_to_baidu) {
